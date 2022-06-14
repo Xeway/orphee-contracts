@@ -12,13 +12,18 @@ contract SharedWallet {
     mapping(address => uint[]) public ownersToWalletIds;
     mapping(uint => Wallet) public wallets;
 
-    function createWallet() public {
+    function createWallet(address[] calldata _newOwners) public {
         ++walletId;
         // gas efficiency purposes
         uint m_walletId = walletId;
 
         ownersToWalletIds[msg.sender].push(m_walletId);
         wallets[m_walletId].owners.push(msg.sender);
+
+        // user that created a brand new wallet can decide to directly add owners
+        if (_newOwners.length > 0) {
+            addOwners(m_walletId, _newOwners);
+        }
     }
 
     function addOwners(uint _walletId, address[] calldata _newOwners) public {
@@ -43,7 +48,7 @@ contract SharedWallet {
     }
 
     function addFunds(uint _walletId) public payable {
-        require(msg.value >= 1 wei, "Insufficient funds");
+        require(msg.value >= 1 wei, "Insufficient funds.");
         
         wallets[_walletId].funds += msg.value;
     }
