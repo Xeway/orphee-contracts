@@ -12,7 +12,7 @@ contract SharedWallet {
     mapping(address => uint[]) public ownersToWalletIds;
     mapping(uint => Wallet) public wallets;
 
-    function createWallet(address[] calldata _newOwners) public {
+    function createWallet(address[] calldata _newOwners) public payable {
         ++walletId;
         // gas efficiency purposes
         uint m_walletId = walletId;
@@ -23,6 +23,10 @@ contract SharedWallet {
         // user that created a brand new wallet can decide to directly add owners
         if (_newOwners.length > 0) {
             addOwners(m_walletId, _newOwners);
+        }
+
+        if (msg.value >= 1 wei) {
+            addFunds(m_walletId);
         }
     }
 
