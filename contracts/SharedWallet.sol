@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract SharedWallet {
 
     struct Wallet {
+        string email;
         string password;
         uint funds;
         mapping(address => uint) tokenFunds;
@@ -14,8 +15,37 @@ contract SharedWallet {
     Wallet wallet;
 
     // the password will be hashed off-chain
-    constructor(string memory _password) validPassword(_password) {
+    constructor(string memory _email, string memory _password) validEmail(_email) validPassword(_password) {
+        wallet.email = _email;
         wallet.password = _password;
+    }
+
+    // verify if the email contain at least a . and a 1 @
+    modifier validEmail(string memory _email) {
+        bytes memory b = bytes(_email);
+
+        bool containAt;
+        bool containDot;
+        bool errorEmail;
+
+        for (uint i = 0; i < b.length; ++i) {
+            if (b[i] == 0x40 && containAt) {
+                errorEmail = true;
+                break;
+            }
+            if (b[i] == 0x40) {
+                containAt = true;
+                if (containDot) break;
+            }
+
+            if (b[i] == 0x2e && !containDot) {
+                containDot = true;
+                if (containAt) break;
+            }
+        }
+
+        require(!errorEmail, "Invalid email.");
+        require(containAt && containDot, "Email should contain @ and .");
     }
 
     modifier validPassword(string memory _password) {
