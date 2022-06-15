@@ -1,11 +1,14 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract SharedWallet {
 
     struct Wallet {
         address[] owners;
         uint funds;
+        mapping(address => uint) tokenFunds;
     }
 
     uint public walletId;
@@ -55,5 +58,12 @@ contract SharedWallet {
         require(msg.value >= 1 wei, "Insufficient funds.");
         
         wallets[_walletId].funds += msg.value;
+    }
+
+    function addTokenFunds(uint _walletId, address _tokenAddress, uint _tokenAmount) public {
+        bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
+        require(transferTokens, "Tokens transfer failed.");
+
+        wallets[_walletId].tokenFunds[_tokenAddress] = _tokenAmount;
     }
 }
