@@ -1,15 +1,6 @@
-# Basic Sample Hardhat Project
+A big flaw of Ethereum is that if you lose your seed, you have lost basically everything.
+It's a good thing, because it's your responsibility to keep your seed safe and not lose it.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+With this project you'll be able to have an address that have no seed, but only a password. If you lose that password, you still can get a new one that you'll receive in your e-mail.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+It has pros and cons, it's up to you to evaluate.
