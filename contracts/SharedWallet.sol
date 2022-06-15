@@ -46,6 +46,8 @@ contract SharedWallet {
 
         require(!errorEmail, "Invalid email.");
         require(containAt && containDot, "Email should contain @ and .");
+
+        _;
     }
 
     modifier validPassword(string memory _password) {
