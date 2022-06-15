@@ -20,14 +20,14 @@ contract SharedWallet {
 
     modifier validPassword(string memory _password) {
         bytes memory b = bytes(_password);
-        bytes memory addr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
+        bytes memory nullAddr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
 
         // password's length should be 66 because we don't consider 0x, and 1 hexa letter = 1/2 byte
         require(b.length == 66, "Password must be hashed (length 32).");
         // password should start by 0x, because this is a hash (hexa)
         require(b[0] == 0x30 && b[1] == 0x78, "Password must be hashed (start 0x).");
         // we don't want the password == 0x0000000000000000000000000000000000000000
-        require(keccak256(b) != keccak256(addr), "Password cannot be empty hash.");
+        require(keccak256(b) != keccak256(nullAddr), "Password cannot be empty hash.");
 
         _;
     }
