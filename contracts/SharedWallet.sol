@@ -6,14 +6,31 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract SharedWallet {
 
     struct Wallet {
-        address[] owners;
+        string password;
         uint funds;
         mapping(address => uint) tokenFunds;
     }
 
-    uint public walletId;
-    mapping(address => uint[]) public ownersToWalletIds;
-    mapping(uint => Wallet) public wallets;
+    Wallet wallet;
+
+    // the password will be hashed off-chain
+    constructor(string memory _password) validPassword(_password) {
+        wallet.password = _password;
+    }
+
+    modifier validPassword(string memory _password) {
+        bytes memory b = bytes(_password);
+        bytes memory addr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
+
+        // password's length should be 66 because we don't consider 0x, and 1 hexa letter = 1/2 byte
+        require(b.length == 66, "Password must be hashed (length 32).");
+        // password should start by 0x, because this is a hash (hexa)
+        require(b[0] == 0x30 && b[1] == 0x78, "Password must be hashed (start 0x).");
+        // we don't want the password == 0x0000000000000000000000000000000000000000
+        require(keccak256(b) != keccak256(addr), "Password cannot be empty hash.");
+
+        _;
+    }
 
     function createWallet(address[] calldata _newOwners) public payable {
         ++walletId;
