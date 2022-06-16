@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract SharedWallet {
+contract SharedWallet is ReentrancyGuard {
 
     struct Wallet {
         string email;
@@ -77,7 +78,7 @@ contract SharedWallet {
         tokenFunds[_tokenAddress] += _tokenAmount;
     }
 
-    function sendFunds(address payable _to, uint _amount, string memory _password) public {
+    function sendFunds(address payable _to, uint _amount, string memory _password) public nonReentrant {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
         require(_amount >= 1 wei, "Amount too low.");
