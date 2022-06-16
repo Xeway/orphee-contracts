@@ -74,6 +74,19 @@ contract SharedWallet {
         bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
         require(transferTokens, "Tokens transfer failed.");
 
-        tokenFunds[_tokenAddress] = _tokenAmount;
+        tokenFunds[_tokenAddress] += _tokenAmount;
+    }
+
+    function sendFunds(address payable _to, uint _amount, string memory _password) public {
+        Wallet memory m_wallet = wallet;
+        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(_amount >= 1 wei, "Amount too low.");
+        require(_amount <= address(this).balance, "Insufficient funds.");
+        require(_to != address(0), "Invalid recipient.");
+
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "Transaction failed.");
+
+        wallet.funds -= _amount;
     }
 }
