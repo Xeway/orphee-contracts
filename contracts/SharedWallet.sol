@@ -90,4 +90,17 @@ contract SharedWallet is ReentrancyGuard {
 
         wallet.funds -= _amount;
     }
+
+    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, string memory _password) public {
+        Wallet memory m_wallet = wallet;
+        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(_tokenAmount > 0, "Token amount too low.");
+        require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)), "Insufficient token funds.");
+        require(_to != address(0), "Invalid recipient.");
+
+        bool success = IERC20(_tokenAddress).transfer(_to, _tokenAmount);
+        require(success, "Transaction failed.");
+
+        tokenFunds[_tokenAddress] -= _tokenAmount;
+    }
 }
