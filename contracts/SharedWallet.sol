@@ -82,7 +82,7 @@ contract SharedWallet is ReentrancyGuard {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
         require(_amount >= 1 wei, "Amount too low.");
-        require(_amount <= address(this).balance, "Insufficient funds.");
+        require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
         require(_to != address(0), "Invalid recipient.");
 
         (bool success, ) = _to.call{value: _amount}("");
@@ -95,7 +95,8 @@ contract SharedWallet is ReentrancyGuard {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
         require(_tokenAmount > 0, "Token amount too low.");
-        require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)), "Insufficient token funds.");
+        uint tFunds = tokenFunds[_tokenAddress];
+        require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) && _tokenAmount <= tFunds, "Insufficient token funds.");
         require(_to != address(0), "Invalid recipient.");
 
         bool success = IERC20(_tokenAddress).transfer(_to, _tokenAmount);
@@ -103,4 +104,37 @@ contract SharedWallet is ReentrancyGuard {
 
         tokenFunds[_tokenAddress] -= _tokenAmount;
     }
+
+    // user pass the argument he wants to pass bundled together thanks a process similar to abi.encode()
+    function callFunctionFromAnotherContract(
+        address payable _to,
+        string memory _functionName,
+        bytes memory _params,
+        uint _amount,
+        string memory _password
+    ) public nonReentrant returns (bytes memory) {
+        Wallet memory m_wallet = wallet;
+        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(_amount >= 1 wei, "Amount too low.");
+        require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
+        require(_to != address(0), "Invalid recipient.");
+        require(keccak256(bytes(_functionName)) != keccak256(bytes("")), "Invalid function name.");
+
+        bytes[] memory params = abi.decode(_params, (bytes[]));
+
+        bytes memory b;
+
+        for (uint i = 0; i < params.length; ++i) {
+            // we can also use abi.encodePacked() (same gas efficiency)
+            b = bytes.concat(b, params[i]);
+        }
+
+        (bool success, bytes memory res) = _to.call{value: _amount}(
+            bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
+        );
+        require(success, "Transaction failed.");
+
+        return res;
+    }
+
 }
