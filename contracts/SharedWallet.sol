@@ -9,8 +9,8 @@ contract SharedWallet {
         string email;
         string password;
         uint funds;
-        mapping(address => uint) tokenFunds;
     }
+    mapping(address => uint) tokenFunds;
 
     Wallet wallet;
 
@@ -74,6 +74,6 @@ contract SharedWallet {
         bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
         require(transferTokens, "Tokens transfer failed.");
 
-        wallet.tokenFunds[_tokenAddress] = _tokenAmount;
+        tokenFunds[_tokenAddress] = _tokenAmount;
     }
 }
