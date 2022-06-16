@@ -124,12 +124,15 @@ contract SharedWallet is ReentrancyGuard {
 
         bytes memory b;
 
+        // here we concatenate all parameters together
         for (uint i = 0; i < params.length; ++i) {
             // we can also use abi.encodePacked() (same gas efficiency)
             b = bytes.concat(b, params[i]);
         }
 
         (bool success, bytes memory res) = _to.call{value: _amount}(
+            // instead of using abi.encodeWithSignature(_functionName, b)
+            // we use that method, because using encodeWithSignature leads to an incorrect result when we pass bundled params (into a bytes)
             bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
         );
         require(success, "Transaction failed.");
