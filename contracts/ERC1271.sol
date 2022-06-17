@@ -9,7 +9,7 @@ contract ERC1271 {
         bytes32 _hash,
         bytes calldata _signature,
         address _signer
-    ) public view returns (bool) {
+    ) public pure returns (bool) {
         return recoverSigner(_hash, _signature) == _signer ? true : false;
     }
 
