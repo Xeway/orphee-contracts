@@ -11,17 +11,19 @@ contract SharedWallet is ReentrancyGuard {
         string password;
         uint funds;
     }
+    // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
     mapping(address => uint) tokenFunds;
 
     Wallet wallet;
 
-    // the password will be hashed off-chain
+    /// @param _email email of the wallet's owner
+    /// @param _password password of the wallet's owner (password is hashed off-chain)
     constructor(string memory _email, string memory _password) validEmail(_email) validPassword(_password) {
         wallet.email = _email;
         wallet.password = _password;
     }
 
-    // verify if the email contain at least a . and a 1 @
+    /// @dev Verify if the email is valid (contain at least a . and one @)
     modifier validEmail(string memory _email) {
         bytes memory b = bytes(_email);
 
@@ -51,6 +53,7 @@ contract SharedWallet is ReentrancyGuard {
         _;
     }
 
+    /// @dev Verify if the password is a hash (32 bytes long + start by 0x + not == 0x00000000000000000000...)
     modifier validPassword(string memory _password) {
         bytes memory b = bytes(_password);
         bytes memory nullAddr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
@@ -65,12 +68,16 @@ contract SharedWallet is ReentrancyGuard {
         _;
     }
 
+    /// @dev Add ETH in the wallet
     function addFunds() public payable {
         require(msg.value >= 1 wei, "Insufficient funds.");
         
         wallet.funds += msg.value;
     }
 
+    /// @dev Add any token in the wallet
+    /// @param _tokenAddress address of the token sent by the user
+    /// @param _tokenAmount amount of token sent by the user
     function addTokenFunds(address _tokenAddress, uint _tokenAmount) public {
         bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
         require(transferTokens, "Tokens transfer failed.");
@@ -78,6 +85,10 @@ contract SharedWallet is ReentrancyGuard {
         tokenFunds[_tokenAddress] += _tokenAmount;
     }
 
+    /// @dev Send ETH from the wallet to another address
+    /// @param _to recipient's address
+    /// @param _amount amount to be sent to _to
+    /// @param _password wallet's password required to be able to call that function
     function sendFunds(address payable _to, uint _amount, string calldata _password) public nonReentrant {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
@@ -91,6 +102,11 @@ contract SharedWallet is ReentrancyGuard {
         wallet.funds -= _amount;
     }
 
+    /// @dev Send any token from the wallet to another address
+    /// @param _to recipient's address
+    /// @param _tokenAddress address of the token to be sent
+    /// @param _tokenAmount amount of token to be sent
+    /// @param _password wallet's password required to be able to call that function
     function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, string calldata _password) public {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
