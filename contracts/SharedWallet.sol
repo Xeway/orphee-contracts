@@ -78,7 +78,7 @@ contract SharedWallet is ReentrancyGuard {
         tokenFunds[_tokenAddress] += _tokenAmount;
     }
 
-    function sendFunds(address payable _to, uint _amount, string memory _password) public nonReentrant {
+    function sendFunds(address payable _to, uint _amount, string calldata _password) public nonReentrant {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
         require(_amount >= 1 wei, "Amount too low.");
@@ -91,7 +91,7 @@ contract SharedWallet is ReentrancyGuard {
         wallet.funds -= _amount;
     }
 
-    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, string memory _password) public {
+    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, string calldata _password) public {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
         require(_tokenAmount > 0, "Token amount too low.");
@@ -108,11 +108,11 @@ contract SharedWallet is ReentrancyGuard {
     // user pass the argument he wants to pass bundled together thanks a process similar to abi.encode()
     function callFunctionFromAnotherContract(
         address payable _to,
-        string memory _functionName,
-        bytes memory _params,
+        string calldata _functionName,
+        bytes calldata _params,
         uint _amount,
         uint _gas,
-        string memory _password
+        string calldata _password
     ) public nonReentrant returns (bytes memory) {
         Wallet memory m_wallet = wallet;
         require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
