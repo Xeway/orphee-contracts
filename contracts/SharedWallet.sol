@@ -105,10 +105,14 @@ contract SharedWallet is ReentrancyGuard {
         tokenFunds[_tokenAddress] -= _tokenAmount;
     }
 
-    // user pass the argument he wants to pass bundled together thanks a process similar to abi.encode()
+    /// @dev User call use this function to call functions from external contracts
+    /// @param _to contract's address to call
+    /// @param _params abi.encodeWithSignature(signatureString, arg) computed off-chain
+    /// @param _amount amount to send to _to
+    /// @param _gas gas amount to use to call the external function (if 0 we don't precise gas)
+    /// @param _password wallet's password required to be able to call that function
     function callFunctionFromAnotherContract(
         address payable _to,
-        string calldata _functionName,
         bytes calldata _params,
         uint _amount,
         uint _gas,
@@ -119,30 +123,18 @@ contract SharedWallet is ReentrancyGuard {
         require(_amount >= 1 wei, "Amount too low.");
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
         require(_to != address(0), "Invalid recipient.");
-        require(keccak256(bytes(_functionName)) != keccak256(bytes("")), "Invalid function name.");
-
-        bytes[] memory params = abi.decode(_params, (bytes[]));
-
-        bytes memory b;
-
-        // here we concatenate all parameters together
-        for (uint i = 0; i < params.length; ++i) {
-            // we can also use abi.encodePacked() (same gas efficiency)
-            b = bytes.concat(b, params[i]);
-        }
+        require(keccak256(_params) != keccak256(bytes("")), "Invalid function call.");
 
         bool success;
         bytes memory res;
 
         if (_gas > 0) {
             (success, res) = _to.call{value: _amount, gas: _gas}(
-                // instead of using abi.encodeWithSignature(_functionName, b)
-                // we use that method, because using encodeWithSignature leads to an incorrect result when we pass bundled params (into a bytes)
-                bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
+                _params
             );
         } else {
             (success, res) = _to.call{value: _amount}(
-                bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
+                _params
             );
         }
         require(success, "Transaction failed.");
