@@ -111,6 +111,7 @@ contract SharedWallet is ReentrancyGuard {
         string memory _functionName,
         bytes memory _params,
         uint _amount,
+        uint _gas,
         string memory _password
     ) public nonReentrant returns (bytes memory) {
         Wallet memory m_wallet = wallet;
@@ -130,11 +131,20 @@ contract SharedWallet is ReentrancyGuard {
             b = bytes.concat(b, params[i]);
         }
 
-        (bool success, bytes memory res) = _to.call{value: _amount}(
-            // instead of using abi.encodeWithSignature(_functionName, b)
-            // we use that method, because using encodeWithSignature leads to an incorrect result when we pass bundled params (into a bytes)
-            bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
-        );
+        bool success;
+        bytes memory res;
+
+        if (_gas > 0) {
+            (success, res) = _to.call{value: _amount, gas: _gas}(
+                // instead of using abi.encodeWithSignature(_functionName, b)
+                // we use that method, because using encodeWithSignature leads to an incorrect result when we pass bundled params (into a bytes)
+                bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
+            );
+        } else {
+            (success, res) = _to.call{value: _amount}(
+                bytes.concat(bytes4(keccak256(bytes(_functionName))), b)
+            );
+        }
         require(success, "Transaction failed.");
 
         return res;
