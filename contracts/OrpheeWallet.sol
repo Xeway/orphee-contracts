@@ -23,7 +23,7 @@ contract OrpheeWallet is ReentrancyGuard {
         wallet.password = _password;
     }
 
-    /// @dev Verify if the email is valid (contain at least a . and one @)
+    /// @notice Verify if the email is valid (contain at least a . and one @)
     modifier validEmail(string memory _email) {
         bytes memory b = bytes(_email);
 
@@ -53,7 +53,7 @@ contract OrpheeWallet is ReentrancyGuard {
         _;
     }
 
-    /// @dev Verify if the password is not a 0x00000 value
+    /// @notice Verify if the password is not a 0x00000 value
     modifier validPassword(bytes32 _password) {
         bytes memory nullAddr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
 
@@ -63,14 +63,14 @@ contract OrpheeWallet is ReentrancyGuard {
         _;
     }
 
-    /// @dev Add ETH in the wallet
+    /// @notice Add ETH in the wallet
     function addFunds() public payable {
         require(msg.value >= 1 wei, "Insufficient funds.");
         
         wallet.funds += msg.value;
     }
 
-    /// @dev Add any token in the wallet
+    /// @notice Add any token in the wallet
     /// @param _tokenAddress address of the token sent by the user
     /// @param _tokenAmount amount of token sent by the user
     function addTokenFunds(address _tokenAddress, uint _tokenAmount) public {
@@ -80,7 +80,7 @@ contract OrpheeWallet is ReentrancyGuard {
         tokenFunds[_tokenAddress] += _tokenAmount;
     }
 
-    /// @dev Send ETH from the wallet to another address
+    /// @notice Send ETH from the wallet to another address
     /// @param _to recipient's address
     /// @param _amount amount to be sent to _to
     /// @param _password wallet's password required to be able to call that function
@@ -97,7 +97,7 @@ contract OrpheeWallet is ReentrancyGuard {
         wallet.funds -= _amount;
     }
 
-    /// @dev Send any token from the wallet to another address
+    /// @notice Send any token from the wallet to another address
     /// @param _to recipient's address
     /// @param _tokenAddress address of the token to be sent
     /// @param _tokenAmount amount of token to be sent
@@ -116,7 +116,7 @@ contract OrpheeWallet is ReentrancyGuard {
         tokenFunds[_tokenAddress] -= _tokenAmount;
     }
 
-    /// @dev User call use this function to call functions from external contracts
+    /// @notice User call use this function to call functions from external contracts
     /// @param _to contract's address to call
     /// @param _params abi.encodeWithSignature(signatureString, arg) computed off-chain
     /// @param _amount amount to send to _to
