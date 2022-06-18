@@ -46,7 +46,7 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _to recipient's address
     /// @param _amount amount to be sent to _to
     /// @param _password wallet's password required to be able to call that function
-    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant verify(_password, _amount, _to) {
+    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant verify(_to, _amount, _password) {
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
 
         (bool success, ) = _to.call{value: _amount}("");
@@ -60,7 +60,7 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _tokenAddress address of the token to be sent
     /// @param _tokenAmount amount of token to be sent
     /// @param _password wallet's password required to be able to call that function
-    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public verify(_password, _tokenAmount, _to) {
+    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public verify(_to, _tokenAmount, _password) {
         uint tFunds = tokenFunds[_tokenAddress];
         require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) && _tokenAmount <= tFunds, "Insufficient token funds.");
 
@@ -82,7 +82,7 @@ contract OrpheeWallet is ReentrancyGuard {
         uint _amount,
         uint _gas,
         bytes32 _password
-    ) public nonReentrant verify(_password, _amount, _to) returns (bytes memory) {
+    ) public nonReentrant verify(_to, _amount, _password) returns (bytes memory) {
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
         require(keccak256(_params) != keccak256(bytes("")), "Invalid function call.");
 
@@ -103,7 +103,7 @@ contract OrpheeWallet is ReentrancyGuard {
         return res;
     }
 
-    modifier verify(bytes32 _password, uint _amount, address _to) {
+    modifier verify(address _to, uint _amount, bytes32 _password) {
         Wallet memory m_wallet = wallet;
         require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
 
