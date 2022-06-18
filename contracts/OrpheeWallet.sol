@@ -8,7 +8,7 @@ contract OrpheeWallet is ReentrancyGuard {
 
     struct Wallet {
         string email;
-        string password;
+        bytes32 password;
         uint funds;
     }
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
@@ -18,7 +18,7 @@ contract OrpheeWallet is ReentrancyGuard {
 
     /// @param _email email of the wallet's owner
     /// @param _password password of the wallet's owner (password is hashed off-chain)
-    constructor(string memory _email, string memory _password) validEmail(_email) validPassword(_password) {
+    constructor(string memory _email, bytes32 _password) validEmail(_email) validPassword(_password) {
         wallet.email = _email;
         wallet.password = _password;
     }
@@ -53,17 +53,12 @@ contract OrpheeWallet is ReentrancyGuard {
         _;
     }
 
-    /// @dev Verify if the password is a hash (32 bytes long + start by 0x + not == 0x00000000000000000000...)
-    modifier validPassword(string memory _password) {
-        bytes memory b = bytes(_password);
+    /// @dev Verify if the password is not a 0x00000 value
+    modifier validPassword(bytes32 _password) {
         bytes memory nullAddr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
 
-        // password's length should be 66 because we don't consider 0x, and 1 hexa letter = 1/2 byte
-        require(b.length == 66, "Password must be hashed (length 32).");
-        // password should start by 0x, because this is a hash (hexa)
-        require(b[0] == 0x30 && b[1] == 0x78, "Password must be hashed (start 0x).");
         // we don't want the password == 0x0000000000000000000000000000000000000000
-        require(keccak256(b) != keccak256(nullAddr), "Password cannot be empty hash.");
+        require(keccak256(abi.encodePacked(_password)) != keccak256(nullAddr), "Password cannot be empty hash.");
 
         _;
     }
@@ -89,9 +84,9 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _to recipient's address
     /// @param _amount amount to be sent to _to
     /// @param _password wallet's password required to be able to call that function
-    function sendFunds(address payable _to, uint _amount, string calldata _password) public nonReentrant {
+    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant {
         Wallet memory m_wallet = wallet;
-        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
         require(_amount >= 1 wei, "Amount too low.");
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
         require(_to != address(0), "Invalid recipient.");
@@ -107,9 +102,9 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _tokenAddress address of the token to be sent
     /// @param _tokenAmount amount of token to be sent
     /// @param _password wallet's password required to be able to call that function
-    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, string calldata _password) public {
+    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public {
         Wallet memory m_wallet = wallet;
-        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
         require(_tokenAmount > 0, "Token amount too low.");
         uint tFunds = tokenFunds[_tokenAddress];
         require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) && _tokenAmount <= tFunds, "Insufficient token funds.");
@@ -132,10 +127,10 @@ contract OrpheeWallet is ReentrancyGuard {
         bytes calldata _params,
         uint _amount,
         uint _gas,
-        string calldata _password
+        bytes32 _password
     ) public nonReentrant returns (bytes memory) {
         Wallet memory m_wallet = wallet;
-        require(keccak256(bytes(_password)) == keccak256(bytes(m_wallet.password)), "Incorrect password.");
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
         require(_amount >= 1 wei, "Amount too low.");
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
         require(_to != address(0), "Invalid recipient.");
