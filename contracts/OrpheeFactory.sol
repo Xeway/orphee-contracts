@@ -16,7 +16,7 @@ contract OrpheeFactory {
     }
 
     /// @notice Verify if the email is valid (contain at least a . and one @)
-    modifier validEmail(string memory _email) {
+    modifier validEmail(string calldata _email) {
         bytes memory b = bytes(_email);
 
         bool containAt;
