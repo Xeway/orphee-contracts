@@ -35,6 +35,7 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _tokenAmount amount of token sent by the user
     function addTokenFunds(address _tokenAddress, uint _tokenAmount) public {
         require(_tokenAmount > 0, "Insufficient funds.");
+
         bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
         require(transferTokens, "Tokens transfer failed.");
 
@@ -45,12 +46,8 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _to recipient's address
     /// @param _amount amount to be sent to _to
     /// @param _password wallet's password required to be able to call that function
-    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant {
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
-        require(_amount >= 1 wei, "Amount too low.");
+    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant verify(_password, _amount, _to) {
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
-        require(_to != address(0), "Invalid recipient.");
 
         (bool success, ) = _to.call{value: _amount}("");
         require(success, "Transaction failed.");
@@ -63,13 +60,9 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _tokenAddress address of the token to be sent
     /// @param _tokenAmount amount of token to be sent
     /// @param _password wallet's password required to be able to call that function
-    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public {
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
-        require(_tokenAmount > 0, "Token amount too low.");
+    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public verify(_password, _tokenAmount, _to) {
         uint tFunds = tokenFunds[_tokenAddress];
         require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) && _tokenAmount <= tFunds, "Insufficient token funds.");
-        require(_to != address(0), "Invalid recipient.");
 
         bool success = IERC20(_tokenAddress).transfer(_to, _tokenAmount);
         require(success, "Transaction failed.");
@@ -89,12 +82,8 @@ contract OrpheeWallet is ReentrancyGuard {
         uint _amount,
         uint _gas,
         bytes32 _password
-    ) public nonReentrant returns (bytes memory) {
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
-        require(_amount >= 1 wei, "Amount too low.");
+    ) public nonReentrant verify(_password, _amount, _to) returns (bytes memory) {
         require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
-        require(_to != address(0), "Invalid recipient.");
         require(keccak256(_params) != keccak256(bytes("")), "Invalid function call.");
 
         bool success;
@@ -112,6 +101,17 @@ contract OrpheeWallet is ReentrancyGuard {
         require(success, "Transaction failed.");
 
         return res;
+    }
+
+    modifier verify(bytes32 _password, uint _amount, address _to) {
+        Wallet memory m_wallet = wallet;
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
+
+        require(_amount > 0, "Amount too low.");
+
+        require(_to != address(0), "Invalid recipient.");
+
+        _;
     }
 
 }
