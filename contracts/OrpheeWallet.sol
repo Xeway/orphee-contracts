@@ -104,12 +104,12 @@ contract OrpheeWallet is ReentrancyGuard {
     }
 
     modifier verify(address _to, uint _amount, bytes32 _password) {
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
-
         require(_amount > 0, "Amount too low.");
 
         require(_to != address(0), "Invalid recipient.");
+
+        Wallet memory m_wallet = wallet;
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
 
         _;
     }
