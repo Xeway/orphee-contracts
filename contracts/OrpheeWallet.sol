@@ -34,6 +34,7 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _tokenAddress address of the token sent by the user
     /// @param _tokenAmount amount of token sent by the user
     function addTokenFunds(address _tokenAddress, uint _tokenAmount) public {
+        require(_tokenAmount > 0, "Insufficient funds.");
         bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
         require(transferTokens, "Tokens transfer failed.");
 
