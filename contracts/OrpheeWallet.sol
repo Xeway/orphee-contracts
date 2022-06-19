@@ -11,12 +11,11 @@ contract OrpheeWallet is ReentrancyGuard {
         bytes32 password;
         uint funds;
     }
+    Wallet wallet;
+
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
     mapping(address => uint) tokenFunds;
-
     address[] tokenList;
-
-    Wallet wallet;
 
     address factoryAddress;
 
