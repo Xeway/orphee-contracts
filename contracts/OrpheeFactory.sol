@@ -18,6 +18,15 @@ contract OrpheeFactory {
         return address(c);
     }
 
+    function deleteWallet(address _recipient, string calldata _email, bytes32 _password) public {
+        address m_wallet = wallets[_email];
+        require(m_wallet != address(0), "Wallet doesn't exists for this email.");
+
+        OrpheeWallet(m_wallet).deleteWallet(_recipient, _password);
+        
+        delete wallets[_email];
+    }
+
     /// @notice Verify if the email is valid (contain at least a . and one @)
     modifier validEmail(string calldata _email) {
         bytes memory b = bytes(_email);

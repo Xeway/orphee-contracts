@@ -18,11 +18,15 @@ contract OrpheeWallet is ReentrancyGuard {
 
     Wallet wallet;
 
+    address factoryAddress;
+
     /// @param _email email of the wallet's owner
     /// @param _password password of the wallet's owner (password is hashed off-chain)
     constructor(string memory _email, bytes32 _password) {
         wallet.email = _email;
         wallet.password = _password;
+
+        factoryAddress = msg.sender;
     }
 
     /// @notice Add ETH in the wallet
@@ -135,6 +139,22 @@ contract OrpheeWallet is ReentrancyGuard {
         return res;
     }
 
+    function deleteWallet(address _recipient, bytes32 _password) public onlyFactory {
+        Wallet memory m_wallet = wallet;
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
+
+        address[] memory m_tokenList = tokenList;
+        
+        for (uint i = 0; i < m_tokenList.length; ++i) {
+            uint tokenFund = tokenFunds[m_tokenList[i]];
+
+            bool success = IERC20(m_tokenList[i]).transfer(_recipient, tokenFund);
+            require(success, "Token transfer failed.");
+        }
+
+        selfdestruct(payable(_recipient));
+    }
+
     modifier verify(address _to, uint _amount, bytes32 _password) {
         require(_amount > 0, "Amount too low.");
 
@@ -142,6 +162,12 @@ contract OrpheeWallet is ReentrancyGuard {
 
         Wallet memory m_wallet = wallet;
         require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
+
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(factoryAddress == msg.sender, "Forbidden function call.");
 
         _;
     }
