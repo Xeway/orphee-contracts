@@ -47,11 +47,11 @@ contract OrpheeWallet is ReentrancyGuard {
 
         tokenFunds[_tokenAddress] += _tokenAmount;
 
-        address[] memory tokenArr = tokenList;
+        address[] memory m_tokenList = tokenList;
         bool tokenAlreadyOwned;
 
-        for (uint i = 0; i < tokenArr.length; ++i) {
-            if (tokenArr[i] == _tokenAddress) {
+        for (uint i = 0; i < m_tokenList.length; ++i) {
+            if (m_tokenList[i] == _tokenAddress) {
                 tokenAlreadyOwned = true;
                 break;
             }
@@ -92,10 +92,10 @@ contract OrpheeWallet is ReentrancyGuard {
         // if the user send all of his tokens
         // we remove this token from tokenList
         if (tFunds == _tokenAmount) {
-            address[] memory tokenArr = tokenList;
+            address[] memory m_tokenList = tokenList;
 
-            for (uint i = 0; i < tokenArr.length; ++i) {
-                if (tokenArr[i] == _tokenAddress) {
+            for (uint i = 0; i < m_tokenList.length; ++i) {
+                if (m_tokenList[i] == _tokenAddress) {
                     // see: https://solidity-by-example.org/array#examples-of-removing-array-element
                     tokenList[i] = tokenList[tokenList.length - 1];
                     tokenList.pop();
