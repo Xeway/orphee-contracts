@@ -9,6 +9,9 @@ contract OrpheeFactory {
     mapping(string => address) public wallets;
 
     function createWallet(string calldata _email, bytes32 _password) public validEmail(_email) validPassword(_password) returns (address) {
+        address m_wallet = wallets[_email];
+        require(m_wallet == address(0), "Wallet already exists for this email.");
+        
         OrpheeWallet c = new OrpheeWallet(_email, _password);
         wallets[_email] = address(c);
 
