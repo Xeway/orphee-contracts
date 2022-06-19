@@ -139,10 +139,7 @@ contract OrpheeWallet is ReentrancyGuard {
         return res;
     }
 
-    function deleteWallet(address _recipient, bytes32 _password) public onlyFactory {
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
-
+    function deleteWallet(address _recipient, bytes32 _password) public onlyFactory verify(_recipient, 1, _password) {
         address[] memory m_tokenList = tokenList;
         
         for (uint i = 0; i < m_tokenList.length; ++i) {
