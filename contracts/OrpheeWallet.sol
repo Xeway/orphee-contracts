@@ -15,6 +15,7 @@ contract OrpheeWallet is ReentrancyGuard {
 
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
     mapping(address => uint) tokenFunds;
+    // tokenList used to loop over tokenFunds
     address[] tokenList;
 
     address factoryAddress;
@@ -111,6 +112,7 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @param _amount amount to send to _to
     /// @param _gas gas amount to use to call the external function (if 0 we don't precise gas)
     /// @param _password wallet's password required to be able to call that function
+    /// @return response from function that have been called
     function callFunctionFromAnotherContract(
         address payable _to,
         bytes calldata _params,
@@ -138,6 +140,10 @@ contract OrpheeWallet is ReentrancyGuard {
         return res;
     }
 
+    /// @notice Factory contract call this function when user want to delete this wallet
+    /// @param _recipient address that will receive all tokens and ethers from that contract
+    /// @param _password wallet's password required to be able to call that function
+    /// @dev we call the modifier verify and pass 1 as parameter for _amount to be acceptable for this _amount-related requirement
     function deleteWallet(address _recipient, bytes32 _password) public onlyFactory verify(_recipient, 1, _password) {
         address[] memory m_tokenList = tokenList;
         
@@ -151,6 +157,10 @@ contract OrpheeWallet is ReentrancyGuard {
         selfdestruct(payable(_recipient));
     }
 
+    /// @notice Checks the validity of some variables
+    /// @param _to address to send funds to
+    /// @param _amount amount to give
+    /// @param _password wallet's password required to be able to call that function
     modifier verify(address _to, uint _amount, bytes32 _password) {
         require(_to != address(0), "Invalid recipient.");
 
@@ -162,6 +172,7 @@ contract OrpheeWallet is ReentrancyGuard {
         _;
     }
 
+    /// @notice Verify if the function is called by the contract factory
     modifier onlyFactory() {
         require(factoryAddress == msg.sender, "Forbidden function call.");
 

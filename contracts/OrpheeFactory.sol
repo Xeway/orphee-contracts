@@ -8,6 +8,9 @@ contract OrpheeFactory {
     /// @dev mapping that store email => address of the wallet
     mapping(string => address) public wallets;
 
+    /// @notice Function to call when user create a brand new wallet
+    /// @param _email email to provide to "sign up". This email is used a kind of ID
+    /// @param _password password of the wallet's owner (password is hashed off-chain)
     function createWallet(string calldata _email, bytes32 _password) public validEmail(_email) validPassword(_password) returns (address) {
         address m_wallet = wallets[_email];
         require(m_wallet == address(0), "Wallet already exists for this email.");
@@ -18,6 +21,10 @@ contract OrpheeFactory {
         return address(c);
     }
 
+    /// @notice Function to call when user delete his wallet
+    /// @param _recipient address that will receive all funds from the contract (ethers and tokens)
+    /// @param _email user's email used as an "ID"
+    /// @param _password user's password to verify if the caller is really the owner
     function deleteWallet(address _recipient, string calldata _email, bytes32 _password) public {
         address m_wallet = wallets[_email];
         require(m_wallet != address(0), "Wallet doesn't exists for this email.");
