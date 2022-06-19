@@ -14,6 +14,8 @@ contract OrpheeWallet is ReentrancyGuard {
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
     mapping(address => uint) tokenFunds;
 
+    address[] tokenList;
+
     Wallet wallet;
 
     /// @param _email email of the wallet's owner
@@ -40,6 +42,20 @@ contract OrpheeWallet is ReentrancyGuard {
         require(transferTokens, "Tokens transfer failed.");
 
         tokenFunds[_tokenAddress] += _tokenAmount;
+
+        address[] memory tokenArr = tokenList;
+        bool tokenAlreadyOwned;
+
+        for (uint i = 0; i < tokenArr.length; ++i) {
+            if (tokenArr[i] == _tokenAddress) {
+                tokenAlreadyOwned = true;
+                break;
+            }
+        }
+
+        if (!tokenAlreadyOwned) {
+            tokenList.push(_tokenAddress);
+        }
     }
 
     /// @notice Send ETH from the wallet to another address
@@ -68,6 +84,22 @@ contract OrpheeWallet is ReentrancyGuard {
         require(success, "Transaction failed.");
 
         tokenFunds[_tokenAddress] -= _tokenAmount;
+
+        // if the user send all of his tokens
+        // we remove this token from tokenList
+        if (tFunds == _tokenAmount) {
+            address[] memory tokenArr = tokenList;
+
+            for (uint i = 0; i < tokenArr.length; ++i) {
+                if (tokenArr[i] == _tokenAddress) {
+                    // see: https://solidity-by-example.org/array#examples-of-removing-array-element
+                    tokenList[i] = tokenList[tokenList.length - 1];
+                    tokenList.pop();
+
+                    break;
+                }
+            }
+        }
     }
 
     /// @notice User call use this function to call functions from external contracts
