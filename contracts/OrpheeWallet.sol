@@ -162,6 +162,14 @@ contract OrpheeWallet is ReentrancyGuard {
         selfdestruct(payable(_recipient));
     }
 
+    /// @notice Function to call when owner have his password by wants to change it
+    /// @param _newPassword password that will replace the old one
+    /// @param _password wallet's password required to be able to call that function
+    /// @dev we call the verify modifier but we only want to verify for the password so we bypass the two others arguments
+    function changePassword(bytes32 _newPassword, bytes32 _password) public verify(msg.sender, 1, _password) {
+        wallet.password = _newPassword;
+    }
+
     /// @notice Store the hash computed off-chain in the smart contract
     /// @param _hash hash computed off-chain
     /// @dev when user will recover his password, the app will generate off-chain a random number.
