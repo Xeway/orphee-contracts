@@ -20,6 +20,9 @@ contract OrpheeWallet is ReentrancyGuard {
 
     address factoryAddress;
 
+    bytes32 tempHash;
+    uint lastRecovery;
+
     /// @param _email email of the wallet's owner
     /// @param _password password of the wallet's owner (password is hashed off-chain)
     constructor(string memory _email, bytes32 _password) {
@@ -27,6 +30,8 @@ contract OrpheeWallet is ReentrancyGuard {
         wallet.password = _password;
 
         factoryAddress = msg.sender;
+
+        lastRecovery = block.timestamp;
     }
 
     /// @notice Add ETH in the wallet
@@ -155,6 +160,40 @@ contract OrpheeWallet is ReentrancyGuard {
         }
 
         selfdestruct(payable(_recipient));
+    }
+
+    /// @notice Store the hash computed off-chain in the smart contract
+    /// @param _hash hash computed off-chain
+    /// @dev when user will recover his password, the app will generate off-chain a random number.
+    /// This number will be hashed, and we will hash the hashed number + the email address together (keccak256(hash_number + email)).
+    /// This is the value of _hash
+    function recoverPassword(bytes32 _hash) public {
+        require(block.timestamp >= lastRecovery + 5 minutes, "Wait 5 minutes before recovering again.");
+
+        tempHash = _hash;
+        lastRecovery = block.timestamp;
+    }
+
+    /// @dev once app called recoverPassword(), it will send an email to the owner and the link that the owner will receive will contain the hashed number generated randomly.
+    /// Then, when when user has defined his new password and submitted the form, createNewPassword will be called.
+    /// The hashed randomly-generated number is passed as _secret. And if the hash that we stored earlier (with recoverPassword()) is equal to keccak256(hash_number + email)
+    /// then this means that the user is the owner of the email because he provided the randomly-generated number only accessible in the email.
+
+    /// @notice Used to set the new password
+    /// @param _secret randomly-generated hashed number (see above)
+    /// @param _email owner's email
+    /// @param _newPassword password that will become the new password of this wallet
+    function createNewPassword(bytes32 _secret, string calldata _email, bytes32 _newPassword) public {
+        require(tempHash == keccak256(bytes.concat(bytes(_email), _secret)), "Invalid secret.");
+
+        require(
+            keccak256(abi.encodePacked(_newPassword)) != keccak256(bytes("0x0000000000000000000000000000000000000000000000000000000000000000")),
+            "Password cannot be empty hash."
+        );
+
+        wallet.password = _newPassword;
+
+        delete tempHash;
     }
 
     /// @notice Checks the validity of some variables
