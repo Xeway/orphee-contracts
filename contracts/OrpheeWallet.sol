@@ -21,6 +21,8 @@ contract OrpheeWallet is ReentrancyGuard {
     address factoryAddress;
 
     bytes32 tempHash;
+    // used to set a cooldown, otherwise an annoying person could change every second tempHash (with recoverPassword())
+    // and the owner couldn't have the time to call createNewPassword()
     uint lastRecovery;
 
     /// @param _email email of the wallet's owner
