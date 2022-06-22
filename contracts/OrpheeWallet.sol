@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract OrpheeWallet is ReentrancyGuard {
+contract OrpheeWallet is ReentrancyGuard, Ownable {
 
     struct Wallet {
-        string email;
+        bytes32 email;
         bytes32 password;
         uint funds;
     }
@@ -25,15 +26,18 @@ contract OrpheeWallet is ReentrancyGuard {
     // and the owner couldn't have the time to call createNewPassword()
     uint lastRecovery;
 
+    /// @param _owner same owner as the factory contract
     /// @param _email email of the wallet's owner
     /// @param _password password of the wallet's owner (password is hashed off-chain)
-    constructor(string memory _email, bytes32 _password) {
+    constructor(address _owner, bytes32 _email, bytes32 _password) {
         wallet.email = _email;
         wallet.password = _password;
 
         factoryAddress = msg.sender;
 
         lastRecovery = block.timestamp;
+
+        _transferOwnership(_owner);
     }
 
     /// @notice Add ETH in the wallet
@@ -177,7 +181,8 @@ contract OrpheeWallet is ReentrancyGuard {
     /// @dev when user will recover his password, the app will generate off-chain a random number.
     /// This number will be hashed, and we will hash the hashed number + the email address together (keccak256(hash_number + email)).
     /// This is the value of _hash
-    function recoverPassword(bytes32 _hash) public {
+    /// @dev onlyOwner used because otherwise anyone can generate his own hash, so here we're sure it's the system that generates the hash
+    function recoverPassword(bytes32 _hash, bytes32 _email) public onlyOwner correctEmail(_email) {
         require(block.timestamp >= lastRecovery + 5 minutes, "Wait 5 minutes before recovering again.");
 
         tempHash = _hash;
@@ -191,10 +196,10 @@ contract OrpheeWallet is ReentrancyGuard {
 
     /// @notice Used to set the new password
     /// @param _secret randomly-generated hashed number (see above)
-    /// @param _email owner's email
+    /// @param _email owner's hashed email
     /// @param _newPassword password that will become the new password of this wallet
-    function createNewPassword(bytes32 _secret, string calldata _email, bytes32 _newPassword) public {
-        require(tempHash == keccak256(bytes.concat(bytes(_email), _secret)), "Invalid secret.");
+    function createNewPassword(bytes32 _secret, bytes32 _email, bytes32 _newPassword) public {
+        require(tempHash == keccak256(bytes.concat(_email, _secret)), "Invalid secret.");
 
         require(
             keccak256(abi.encodePacked(_newPassword)) != keccak256(bytes("0x0000000000000000000000000000000000000000000000000000000000000000")),
@@ -217,6 +222,17 @@ contract OrpheeWallet is ReentrancyGuard {
 
         Wallet memory m_wallet = wallet;
         require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
+
+        _;
+    }
+
+    /// @notice check that the email send as parameter is equal to the email stored in the wallet
+    /// @param _email email to check
+    /// @dev in the front-end, the owner's email will be stored in the client's browser, so a malicious user could change this value.
+    /// This is unsecure because if he call for instance recoverPassword(), the _hash will be according to its email address, and the _secret key
+    /// will be sent to his own email address that he replaced
+    modifier correctEmail(bytes32 _email) {
+        require(_email == wallet.email, "Invalid email.");
 
         _;
     }
