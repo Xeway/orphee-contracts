@@ -108,7 +108,7 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
             for (uint i = 0; i < m_tokenList.length; ++i) {
                 if (m_tokenList[i] == _tokenAddress) {
                     // see: https://solidity-by-example.org/array#examples-of-removing-array-element
-                    tokenList[i] = tokenList[tokenList.length - 1];
+                    tokenList[i] = tokenList[m_tokenList.length - 1];
                     tokenList.pop();
 
                     break;
