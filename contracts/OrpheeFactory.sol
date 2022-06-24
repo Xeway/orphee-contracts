@@ -8,7 +8,7 @@ import "./OrpheeWallet.sol";
 contract OrpheeFactory is Ownable {
 
     /// @dev mapping that store email => address of the wallet
-    mapping(bytes32 => address) public wallets;
+    mapping(bytes32 => OrpheeWallet) public wallets;
 
     struct Temp {
         bytes32 tempHash;
@@ -41,11 +41,11 @@ contract OrpheeFactory is Ownable {
     function confirmWalletCreation(bytes32 _secret, bytes32 _email, bytes32 _password) public validPassword(_password) returns (address) {
         require(temp[_email].tempHash == keccak256(bytes.concat(_email, _secret)), "Invalid secret.");
         
-        address m_wallet = wallets[_email];
+        address m_wallet = address(wallets[_email]);
         require(m_wallet == address(0), "Wallet already exists for this email.");
         
         OrpheeWallet c = new OrpheeWallet(owner(), _email, _password);
-        wallets[_email] = address(c);
+        wallets[_email] = c;
 
         return address(c);
     }
@@ -55,7 +55,7 @@ contract OrpheeFactory is Ownable {
     /// @param _email user's email used as an "ID"
     /// @param _password user's password to verify if the caller is really the owner
     function deleteWallet(address _recipient, bytes32 _email, bytes32 _password) public {
-        address m_wallet = wallets[_email];
+        address m_wallet = address(wallets[_email]);
         require(m_wallet != address(0), "Wallet doesn't exists for this email.");
 
         OrpheeWallet(m_wallet).deleteWallet(_recipient, _password);
