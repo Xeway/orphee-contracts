@@ -52,7 +52,7 @@ contract OrpheeFactory is Ownable {
 
     /// @notice Function to call when user delete his wallet
     /// @param _recipient address that will receive all funds from the contract (ethers and tokens)
-    /// @param _email user's email used as an "ID"
+    /// @param _email user's email used as a kind of "ID"
     /// @param _password user's password to verify if the caller is really the owner
     function deleteWallet(address _recipient, bytes32 _email, bytes32 _password) public {
         address m_wallet = address(wallets[_email]);
