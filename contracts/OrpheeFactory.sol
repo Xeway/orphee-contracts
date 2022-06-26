@@ -10,6 +10,8 @@ contract OrpheeFactory is Ownable {
     /// @dev mapping that store email => address of the wallet
     mapping(bytes32 => OrpheeWallet) public wallets;
 
+    address[] walletAddresses;
+
     struct Temp {
         bytes32 tempHash;
         uint lastRecovery;
@@ -47,6 +49,8 @@ contract OrpheeFactory is Ownable {
         OrpheeWallet c = new OrpheeWallet(owner(), _email, _password);
         wallets[_email] = c;
 
+        walletAddresses.push(address(c));
+
         return address(c);
     }
 
@@ -58,9 +62,21 @@ contract OrpheeFactory is Ownable {
         address m_wallet = address(wallets[_email]);
         require(m_wallet != address(0), "Wallet doesn't exists for this email.");
 
-        OrpheeWallet(m_wallet).deleteWallet(_recipient, _password);
+        wallets[_email].deleteWallet(_recipient, _password);
         
         delete wallets[_email];
+
+        // we remove from walletAddresses that address of this wallet
+        address[] memory m_walletAddresses = walletAddresses;
+        for (uint i = 0; i < m_walletAddresses.length; ++i) {
+            if (m_walletAddresses[i] == m_wallet) {
+                // see: https://solidity-by-example.org/array#examples-of-removing-array-element
+                walletAddresses[i] = walletAddresses[m_walletAddresses.length - 1];
+                walletAddresses.pop();
+
+                break;
+            }
+        }
     }
 
     /// @notice Verify if the email is valid (contain at least a . and one @)
