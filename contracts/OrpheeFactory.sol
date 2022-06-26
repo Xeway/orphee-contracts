@@ -10,6 +10,7 @@ contract OrpheeFactory is Ownable {
     /// @dev mapping that store email => address of the wallet
     mapping(bytes32 => OrpheeWallet) public wallets;
 
+    /// @dev used to iterate over the wallets mapping
     address[] walletAddresses;
 
     struct Temp {
@@ -62,7 +63,7 @@ contract OrpheeFactory is Ownable {
         address m_wallet = address(wallets[_email]);
         require(m_wallet != address(0), "Wallet doesn't exists for this email.");
 
-        wallets[_email].deleteWallet(_recipient, _password);
+        OrpheeWallet(m_wallet).deleteWallet(_recipient, _password);
         
         delete wallets[_email];
 
