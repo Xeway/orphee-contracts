@@ -227,8 +227,7 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
 
         require(_amount > 0, "Amount too low.");
 
-        Wallet memory m_wallet = wallet;
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(m_wallet.password)), "Incorrect password.");
+        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(wallet.password)), "Incorrect password.");
 
         _;
     }

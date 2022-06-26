@@ -44,8 +44,7 @@ contract OrpheeFactory is Ownable {
     function confirmWalletCreation(bytes32 _secret, bytes32 _email, bytes32 _password) public validPassword(_password) returns (address) {
         require(temp[_email].tempHash == keccak256(bytes.concat(_email, _secret)), "Invalid secret.");
         
-        address m_wallet = address(wallets[_email]);
-        require(m_wallet == address(0), "Wallet already exists for this email.");
+        require(address(wallets[_email]) == address(0), "Wallet already exists for this email.");
         
         OrpheeWallet c = new OrpheeWallet(owner(), _email, _password);
         wallets[_email] = c;
