@@ -211,6 +211,13 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
         delete tempHash;
     }
 
+    /// @notice Function to call to change owner's address
+    /// @param _newOwner address of the new owner
+    /// @dev see changeOwner() function in OrpheeFactory.sol for more informations
+    function changeOwner(address _newOwner) public onlyFactory {
+        _transferOwnership(_newOwner);
+    }
+
     /// @notice Checks the validity of some variables
     /// @param _to address to send funds to
     /// @param _amount amount to give

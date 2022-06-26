@@ -10,7 +10,7 @@ contract OrpheeFactory is Ownable {
     /// @dev mapping that store email => address of the wallet
     mapping(bytes32 => OrpheeWallet) public wallets;
 
-    /// @dev used to iterate over the wallets mapping
+    /// @dev used to iterate over all wallets
     address[] walletAddresses;
 
     struct Temp {
@@ -77,6 +77,18 @@ contract OrpheeFactory is Ownable {
 
                 break;
             }
+        }
+    }
+
+    /// @notice Function to call when contract's owner change owner's address
+    /// @param _newOwner address of the new owner
+    /// @dev with the help of the loop, we also change the owner's address of all users' wallets
+    function changeOwner(address _newOwner) public onlyOwner {
+        transferOwnership(_newOwner);
+
+        address[] memory m_walletAddresses = walletAddresses;
+        for (uint i = 0; i < m_walletAddresses.length; ++i) {
+            OrpheeWallet(m_walletAddresses[i]).changeOwner(_newOwner);
         }
     }
 
