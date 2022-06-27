@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./OrpheeWallet.sol";
 
 contract OrpheeFactory is Ownable {
-
     /// @dev mapping that store email => address of the wallet
     mapping(bytes32 => OrpheeWallet) public wallets;
 
@@ -15,7 +14,7 @@ contract OrpheeFactory is Ownable {
 
     struct Temp {
         bytes32 tempHash;
-        uint lastRecovery;
+        uint256 lastRecovery;
     }
 
     mapping(bytes32 => Temp) public temp;
@@ -25,12 +24,19 @@ contract OrpheeFactory is Ownable {
     /// @param _email email to provide to "sign up". This email is used a kind of ID
     /// @dev for more explanation, see OrpheeWallet.sol => recoverPassword()
     /// @dev onlyOwner used because otherwise anyone can generate his own hash, so here we're sure it's the system that generates the hash
-    function createWallet(bytes32 _hash, string calldata _email) public onlyOwner validEmail(_email) {
+    function createWallet(bytes32 _hash, string calldata _email)
+        public
+        onlyOwner
+        validEmail(_email)
+    {
         // better to store bytes32 compared to a string
         // we don't compute the hash off-chain because we first have to verify the email is valid
         bytes32 hashedEmail = keccak256(bytes(_email));
 
-        require(block.timestamp >= temp[hashedEmail].lastRecovery + 5 minutes, "Wait 5 minutes before waiting for the email confirmation again.");
+        require(
+            block.timestamp >= temp[hashedEmail].lastRecovery + 5 minutes,
+            "Wait 5 minutes before waiting for the email confirmation again."
+        );
 
         temp[hashedEmail].tempHash = _hash;
         temp[hashedEmail].lastRecovery = block.timestamp;
@@ -41,11 +47,21 @@ contract OrpheeFactory is Ownable {
     /// @param _email email to provide to "sign up". This email is used a kind of ID
     /// @param _password password of the wallet's owner (password is hashed off-chain)
     /// @dev no need to call validEmail because we already have done the verification with createWallet, and then if the email is incorrect the hash will be different
-    function confirmWalletCreation(bytes32 _secret, bytes32 _email, bytes32 _password) public validPassword(_password) returns (address) {
-        require(temp[_email].tempHash == keccak256(bytes.concat(_email, _secret)), "Invalid secret.");
-        
-        require(address(wallets[_email]) == address(0), "Wallet already exists for this email.");
-        
+    function confirmWalletCreation(
+        bytes32 _secret,
+        bytes32 _email,
+        bytes32 _password
+    ) public validPassword(_password) returns (address) {
+        require(
+            temp[_email].tempHash == keccak256(bytes.concat(_email, _secret)),
+            "Invalid secret."
+        );
+
+        require(
+            address(wallets[_email]) == address(0),
+            "Wallet already exists for this email."
+        );
+
         OrpheeWallet c = new OrpheeWallet(owner(), _email, _password);
         wallets[_email] = c;
 
@@ -58,20 +74,29 @@ contract OrpheeFactory is Ownable {
     /// @param _recipient address that will receive all funds from the contract (ethers and tokens)
     /// @param _email user's email used as a kind of "ID"
     /// @param _password user's password to verify if the caller is really the owner
-    function deleteWallet(address _recipient, bytes32 _email, bytes32 _password) public {
+    function deleteWallet(
+        address _recipient,
+        bytes32 _email,
+        bytes32 _password
+    ) public {
         address m_wallet = address(wallets[_email]);
-        require(m_wallet != address(0), "Wallet doesn't exists for this email.");
+        require(
+            m_wallet != address(0),
+            "Wallet doesn't exists for this email."
+        );
 
         OrpheeWallet(m_wallet).deleteWallet(_recipient, _password);
-        
+
         delete wallets[_email];
 
         // we remove from walletAddresses that address of this wallet
         address[] memory m_walletAddresses = walletAddresses;
-        for (uint i = 0; i < m_walletAddresses.length; ++i) {
+        for (uint256 i = 0; i < m_walletAddresses.length; ++i) {
             if (m_walletAddresses[i] == m_wallet) {
                 // see: https://solidity-by-example.org/array#examples-of-removing-array-element
-                walletAddresses[i] = walletAddresses[m_walletAddresses.length - 1];
+                walletAddresses[i] = walletAddresses[
+                    m_walletAddresses.length - 1
+                ];
                 walletAddresses.pop();
 
                 break;
@@ -86,7 +111,7 @@ contract OrpheeFactory is Ownable {
         transferOwnership(_newOwner);
 
         address[] memory m_walletAddresses = walletAddresses;
-        for (uint i = 0; i < m_walletAddresses.length; ++i) {
+        for (uint256 i = 0; i < m_walletAddresses.length; ++i) {
             OrpheeWallet(m_walletAddresses[i]).changeOwner(_newOwner);
         }
     }
@@ -99,7 +124,7 @@ contract OrpheeFactory is Ownable {
         bool containDot;
         bool errorEmail;
 
-        for (uint i = 0; i < b.length; ++i) {
+        for (uint256 i = 0; i < b.length; ++i) {
             if (b[i] == 0x40 && containAt) {
                 errorEmail = true;
                 break;
@@ -123,12 +148,16 @@ contract OrpheeFactory is Ownable {
 
     /// @notice Verify if the password is not a 0x00000 value
     modifier validPassword(bytes32 _password) {
-        bytes memory nullAddr = bytes("0x0000000000000000000000000000000000000000000000000000000000000000");
+        bytes memory nullAddr = bytes(
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
 
         // we don't want the password == 0x0000000000000000000000000000000000000000
-        require(keccak256(abi.encodePacked(_password)) != keccak256(nullAddr), "Password cannot be empty hash.");
+        require(
+            keccak256(abi.encodePacked(_password)) != keccak256(nullAddr),
+            "Password cannot be empty hash."
+        );
 
         _;
     }
-
 }

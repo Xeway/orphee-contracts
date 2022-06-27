@@ -6,16 +6,15 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract OrpheeWallet is ReentrancyGuard, Ownable {
-
     struct Wallet {
         bytes32 email;
         bytes32 password;
-        uint funds;
+        uint256 funds;
     }
     Wallet wallet;
 
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
-    mapping(address => uint) tokenFunds;
+    mapping(address => uint256) tokenFunds;
     // tokenList used to loop over tokenFunds
     address[] tokenList;
 
@@ -24,12 +23,16 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     bytes32 tempHash;
     // used to set a cooldown, otherwise an annoying person could change every second tempHash (with recoverPassword())
     // and the owner couldn't have the time to call createNewPassword()
-    uint lastRecovery;
+    uint256 lastRecovery;
 
     /// @param _owner same owner as the factory contract
     /// @param _email email of the wallet's owner
     /// @param _password password of the wallet's owner (password is hashed off-chain)
-    constructor(address _owner, bytes32 _email, bytes32 _password) {
+    constructor(
+        address _owner,
+        bytes32 _email,
+        bytes32 _password
+    ) {
         wallet.email = _email;
         wallet.password = _password;
 
@@ -43,17 +46,21 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @notice Add ETH in the wallet
     function addFunds() public payable {
         require(msg.value >= 1 wei, "Insufficient funds.");
-        
+
         wallet.funds += msg.value;
     }
 
     /// @notice Add any token in the wallet
     /// @param _tokenAddress address of the token sent by the user
     /// @param _tokenAmount amount of token sent by the user
-    function addTokenFunds(address _tokenAddress, uint _tokenAmount) public {
+    function addTokenFunds(address _tokenAddress, uint256 _tokenAmount) public {
         require(_tokenAmount > 0, "Insufficient funds.");
 
-        bool transferTokens = IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
+        bool transferTokens = IERC20(_tokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            _tokenAmount
+        );
         require(transferTokens, "Tokens transfer failed.");
 
         tokenFunds[_tokenAddress] += _tokenAmount;
@@ -61,7 +68,7 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
         address[] memory m_tokenList = tokenList;
         bool tokenAlreadyOwned;
 
-        for (uint i = 0; i < m_tokenList.length; ++i) {
+        for (uint256 i = 0; i < m_tokenList.length; ++i) {
             if (m_tokenList[i] == _tokenAddress) {
                 tokenAlreadyOwned = true;
                 break;
@@ -77,8 +84,15 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _to recipient's address
     /// @param _amount amount to be sent to _to
     /// @param _password wallet's password required to be able to call that function
-    function sendFunds(address payable _to, uint _amount, bytes32 _password) public nonReentrant verify(_to, _amount, _password) {
-        require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
+    function sendFunds(
+        address payable _to,
+        uint256 _amount,
+        bytes32 _password
+    ) public nonReentrant verify(_to, _amount, _password) {
+        require(
+            _amount <= address(this).balance && _amount <= wallet.funds,
+            "Insufficient funds."
+        );
 
         (bool success, ) = _to.call{value: _amount}("");
         require(success, "Transaction failed.");
@@ -91,9 +105,18 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _tokenAddress address of the token to be sent
     /// @param _tokenAmount amount of token to be sent
     /// @param _password wallet's password required to be able to call that function
-    function sendTokenFunds(address _to, address _tokenAddress, uint _tokenAmount, bytes32 _password) public verify(_to, _tokenAmount, _password) {
-        uint tFunds = tokenFunds[_tokenAddress];
-        require(_tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) && _tokenAmount <= tFunds, "Insufficient token funds.");
+    function sendTokenFunds(
+        address _to,
+        address _tokenAddress,
+        uint256 _tokenAmount,
+        bytes32 _password
+    ) public verify(_to, _tokenAmount, _password) {
+        uint256 tFunds = tokenFunds[_tokenAddress];
+        require(
+            _tokenAmount <= IERC20(_tokenAddress).balanceOf(address(this)) &&
+                _tokenAmount <= tFunds,
+            "Insufficient token funds."
+        );
 
         bool success = IERC20(_tokenAddress).transfer(_to, _tokenAmount);
         require(success, "Transaction failed.");
@@ -105,7 +128,7 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
         if (tFunds == _tokenAmount) {
             address[] memory m_tokenList = tokenList;
 
-            for (uint i = 0; i < m_tokenList.length; ++i) {
+            for (uint256 i = 0; i < m_tokenList.length; ++i) {
                 if (m_tokenList[i] == _tokenAddress) {
                     // see: https://solidity-by-example.org/array#examples-of-removing-array-element
                     tokenList[i] = tokenList[m_tokenList.length - 1];
@@ -127,24 +150,31 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     function callFunctionFromAnotherContract(
         address payable _to,
         bytes calldata _params,
-        uint _amount,
-        uint _gas,
+        uint256 _amount,
+        uint256 _gas,
         bytes32 _password
-    ) public nonReentrant verify(_to, _amount, _password) returns (bytes memory) {
-        require(_amount <= address(this).balance && _amount <= wallet.funds, "Insufficient funds.");
-        require(keccak256(_params) != keccak256(bytes("")), "Invalid function call.");
+    )
+        public
+        nonReentrant
+        verify(_to, _amount, _password)
+        returns (bytes memory)
+    {
+        require(
+            _amount <= address(this).balance && _amount <= wallet.funds,
+            "Insufficient funds."
+        );
+        require(
+            keccak256(_params) != keccak256(bytes("")),
+            "Invalid function call."
+        );
 
         bool success;
         bytes memory res;
 
         if (_gas > 0) {
-            (success, res) = _to.call{value: _amount, gas: _gas}(
-                _params
-            );
+            (success, res) = _to.call{value: _amount, gas: _gas}(_params);
         } else {
-            (success, res) = _to.call{value: _amount}(
-                _params
-            );
+            (success, res) = _to.call{value: _amount}(_params);
         }
         require(success, "Transaction failed.");
 
@@ -155,13 +185,20 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _recipient address that will receive all tokens and ethers from that contract
     /// @param _password wallet's password required to be able to call that function
     /// @dev we call the modifier verify and pass 1 as parameter for _amount to be acceptable for this _amount-related requirement
-    function deleteWallet(address _recipient, bytes32 _password) public onlyFactory verify(_recipient, 1, _password) {
+    function deleteWallet(address _recipient, bytes32 _password)
+        public
+        onlyFactory
+        verify(_recipient, 1, _password)
+    {
         address[] memory m_tokenList = tokenList;
-        
-        for (uint i = 0; i < m_tokenList.length; ++i) {
-            uint tokenFund = tokenFunds[m_tokenList[i]];
 
-            bool success = IERC20(m_tokenList[i]).transfer(_recipient, tokenFund);
+        for (uint256 i = 0; i < m_tokenList.length; ++i) {
+            uint256 tokenFund = tokenFunds[m_tokenList[i]];
+
+            bool success = IERC20(m_tokenList[i]).transfer(
+                _recipient,
+                tokenFund
+            );
             require(success, "Token transfer failed.");
         }
 
@@ -172,7 +209,10 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _newPassword password that will replace the old one
     /// @param _password wallet's password required to be able to call that function
     /// @dev we call the verify modifier but we only want to verify for the password so we bypass the two others arguments
-    function changePassword(bytes32 _newPassword, bytes32 _password) public verify(msg.sender, 1, _password) {
+    function changePassword(bytes32 _newPassword, bytes32 _password)
+        public
+        verify(msg.sender, 1, _password)
+    {
         wallet.password = _newPassword;
     }
 
@@ -182,8 +222,15 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// This number will be hashed, and we will hash the hashed number + the email address together (keccak256(hash_number + email)).
     /// This is the value of _hash
     /// @dev onlyOwner used because otherwise anyone can generate his own hash, so here we're sure it's the system that generates the hash
-    function recoverPassword(bytes32 _hash, bytes32 _email) public onlyOwner correctEmail(_email) {
-        require(block.timestamp >= lastRecovery + 5 minutes, "Wait 5 minutes before recovering again.");
+    function recoverPassword(bytes32 _hash, bytes32 _email)
+        public
+        onlyOwner
+        correctEmail(_email)
+    {
+        require(
+            block.timestamp >= lastRecovery + 5 minutes,
+            "Wait 5 minutes before recovering again."
+        );
 
         tempHash = _hash;
         lastRecovery = block.timestamp;
@@ -198,11 +245,23 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _secret randomly-generated hashed number (see above)
     /// @param _email owner's hashed email
     /// @param _newPassword password that will become the new password of this wallet
-    function createNewPassword(bytes32 _secret, bytes32 _email, bytes32 _newPassword) public {
-        require(tempHash == keccak256(bytes.concat(_email, _secret)), "Invalid secret.");
+    function createNewPassword(
+        bytes32 _secret,
+        bytes32 _email,
+        bytes32 _newPassword
+    ) public {
+        require(
+            tempHash == keccak256(bytes.concat(_email, _secret)),
+            "Invalid secret."
+        );
 
         require(
-            keccak256(abi.encodePacked(_newPassword)) != keccak256(bytes("0x0000000000000000000000000000000000000000000000000000000000000000")),
+            keccak256(abi.encodePacked(_newPassword)) !=
+                keccak256(
+                    bytes(
+                        "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    )
+                ),
             "Password cannot be empty hash."
         );
 
@@ -222,12 +281,20 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
     /// @param _to address to send funds to
     /// @param _amount amount to give
     /// @param _password wallet's password required to be able to call that function
-    modifier verify(address _to, uint _amount, bytes32 _password) {
+    modifier verify(
+        address _to,
+        uint256 _amount,
+        bytes32 _password
+    ) {
         require(_to != address(0), "Invalid recipient.");
 
         require(_amount > 0, "Amount too low.");
 
-        require(keccak256(abi.encodePacked(_password)) == keccak256(abi.encodePacked(wallet.password)), "Incorrect password.");
+        require(
+            keccak256(abi.encodePacked(_password)) ==
+                keccak256(abi.encodePacked(wallet.password)),
+            "Incorrect password."
+        );
 
         _;
     }
@@ -249,5 +316,4 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
 
         _;
     }
-
 }
