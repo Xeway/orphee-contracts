@@ -10,7 +10,7 @@ contract OrpheeFactory is Ownable {
     mapping(bytes32 => OrpheeWallet) public wallets;
 
     /// @dev used to iterate over all wallets
-    address[] walletAddresses;
+    address[] public walletAddresses;
 
     struct Temp {
         bytes32 tempHash;

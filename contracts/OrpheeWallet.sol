@@ -11,19 +11,19 @@ contract OrpheeWallet is ReentrancyGuard, Ownable {
         bytes32 password;
         uint256 funds;
     }
-    Wallet wallet;
+    Wallet public wallet;
 
     // we don't store tokenFunds inside Wallet because that's a mapping and so the whole struct can't be copied to memory (it's therefore not gas-efficient)
-    mapping(address => uint256) tokenFunds;
+    mapping(address => uint256) public tokenFunds;
     // tokenList used to loop over tokenFunds
-    address[] tokenList;
+    address[] public tokenList;
 
-    address factoryAddress;
+    address public factoryAddress;
 
-    bytes32 tempHash;
+    bytes32 public tempHash;
     // used to set a cooldown, otherwise an annoying person could change every second tempHash (with recoverPassword())
     // and the owner couldn't have the time to call createNewPassword()
-    uint256 lastRecovery;
+    uint256 public lastRecovery;
 
     /// @param _owner same owner as the factory contract
     /// @param _email email of the wallet's owner
