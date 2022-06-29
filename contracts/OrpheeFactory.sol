@@ -46,6 +46,7 @@ contract OrpheeFactory is Ownable {
     /// @param _secret [hashed randomly-generated number] (see above)
     /// @param _email email to provide to "sign up". This email is used a kind of ID
     /// @param _password password of the wallet's owner (password is hashed off-chain)
+    /// @return the address of the wallet that just have been created
     /// @dev no need to call validEmail because we already have done the verification with createWallet, and then if the email is incorrect the hash will be different
     function confirmWalletCreation(
         bytes32 _secret,
